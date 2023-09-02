@@ -1,0 +1,60 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<h1>SignalR Chat</h1>
+<p>Type your name and message and press enter to send.</p>
+<input type="text" id="userInput" placeholder="User name" />
+<input type="text" id="messageInput" placeholder="Message" />
+<ul id="messagesList"></ul>
+
+<!-- Reference the SignalR library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.11/signalr.min.js"></script>
+
+<!-- Add SignalR script to update the chat message list -->
+<script>
+    // Create a connection to the chat hub
+    var connection = new signalR.HubConnectionBuilder().withUrl("/chatHub").build();
+
+    // Disable the send button until the connection is established
+    document.getElementById("messageInput").disabled = true;
+
+    // Define a function to display messages on the page
+    function writeMessage(message) {
+        var li = document.createElement("li");
+        li.textContent = message;
+        document.getElementById("messagesList").appendChild(li);
+    }
+
+    // Register a handler for the ReceiveMessage event from the hub
+    connection.on("ReceiveMessage", function (user, message) {
+        writeMessage(user + ": " + message);
+    });
+
+    // Start the connection and enable the send button when it's done
+    connection.start().then(function () {
+        document.getElementById("messageInput").disabled = false;
+    }).catch(function (err) {
+        return console.error(err.toString());
+    });
+
+    // Add an event listener for the send button
+    document.getElementById("messageInput").addEventListener("keyup", function (event) {
+        // Check if the enter key was pressed
+        if (event.keyCode === 13) {
+            // Get the user name and message from the input fields
+            var user = document.getElementById("userInput").value;
+            var message = document.getElementById("messageInput").value;
+
+            // Call the SendMessage method on the hub
+            connection.invoke("SendMessage", user, message).catch(function (err) {
+                return console.error(err.toString());
+            });
+
+            // Clear the message input field
+            document.getElementById("messageInput").value = "";
+        }
+    });
+</script>
